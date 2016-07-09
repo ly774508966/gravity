@@ -1,6 +1,6 @@
 [submodule "libphone"]
 	path = libphone
-	url = git@github.com:huxingyi/libphone.git
+	url = https://github.com/huxingyi/libphone.git
 [submodule "duktape"]
 	path = duktape
-	url = git@github.com:svaarala/duktape.git
+	url = https://github.com/svaarala/duktape.git
