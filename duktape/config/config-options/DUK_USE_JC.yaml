@@ -1,0 +1,8 @@
+define: DUK_USE_JC
+feature_enables: DUK_OPT_JC
+introduced: 1.0.0
+default: true
+tags:
+  - ecmascript
+description: >
+  Enable support for the JC custom JSON format.

@@ -1,0 +1,16 @@
+define: DUK_USE_TARGET_INFO
+feature_snippet: |
+  #if defined(DUK_OPT_TARGET_INFO)
+  #define DUK_USE_TARGET_INFO DUK_OPT_TARGET_INFO
+  #else
+  #define DUK_USE_TARGET_INFO "unknown"
+  #endif
+introduced: 1.2.0
+default:
+  string: "unknown"
+tags:
+  - debugger
+description: >
+  Define a freeform human readable string to describe the target device (e.g.
+  "Arduino Yun").  This string will be sent as part of version/target info in
+  the debugger protocol and shows up in the debugger UI.

@@ -1,0 +1,306 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		35794E4FB600CEDE58496861 /* main.m */ = {isa = PBXBuildFile; fileRef = F4AD46C384D7E2A5814BA46B /* main.m */; };
+		3BDD40F290F3F147F782AE89 /* testtimer.c */ = {isa = PBXBuildFile; fileRef = 11A64F798B509FA44B32FAF5 /* testtimer.c */; };
+		6EF64D07A665430E778865CB /* testview.c */ = {isa = PBXBuildFile; fileRef = 553B4F5788D1455D85124B30 /* testview.c */; };
+		DAFA4D1FB3D89956C7002061 /* libphone.c */ = {isa = PBXBuildFile; fileRef = 766548C78D1BD1D34B5088F6 /* libphone.c */; };
+		E98C4905B28CB606A908A2ED /* iosphone.m */ = {isa = PBXBuildFile; fileRef = BFFB4C83A6FF9E3036680FD8 /* iosphone.m */; };
+		EDB64EAFA7744FF9CF6B238E /* test.c */ = {isa = PBXBuildFile; fileRef = 6352484DAF9BD532B8C86D51 /* test.c */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		11A64F798B509FA44B32FAF5 /* testtimer.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = testtimer.c; path = ../../test/testtimer.c; sourceTree = SOURCE_ROOT; };
+		3FA169A51D2C978C00B82066 /* test.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = test.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		3FA169B91D2C978C00B82066 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		553B4F5788D1455D85124B30 /* testview.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = testview.c; path = ../../test/testview.c; sourceTree = SOURCE_ROOT; };
+		6352484DAF9BD532B8C86D51 /* test.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = test.c; path = ../../test/test.c; sourceTree = SOURCE_ROOT; };
+		766548C78D1BD1D34B5088F6 /* libphone.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = libphone.c; path = ../../src/libphone.c; sourceTree = SOURCE_ROOT; };
+		BFFB4C83A6FF9E3036680FD8 /* iosphone.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = iosphone.m; path = ../../src/ios/iosphone.m; sourceTree = SOURCE_ROOT; };
+		F4AD46C384D7E2A5814BA46B /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = main.m; path = ../../test/ios/main.m; sourceTree = SOURCE_ROOT; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		3FA169A21D2C978C00B82066 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		3FA1699C1D2C978C00B82066 /*  */ = {
+			isa = PBXGroup;
+			children = (
+				3FA169A71D2C978C00B82066 /* test */,
+				3FA169A61D2C978C00B82066 /* Products */,
+				766548C78D1BD1D34B5088F6 /* libphone.c */,
+				BFFB4C83A6FF9E3036680FD8 /* iosphone.m */,
+				6352484DAF9BD532B8C86D51 /* test.c */,
+				11A64F798B509FA44B32FAF5 /* testtimer.c */,
+				553B4F5788D1455D85124B30 /* testview.c */,
+				F4AD46C384D7E2A5814BA46B /* main.m */,
+			);
+			sourceTree = "<group>";
+		};
+		3FA169A61D2C978C00B82066 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				3FA169A51D2C978C00B82066 /* test.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		3FA169A71D2C978C00B82066 /* test */ = {
+			isa = PBXGroup;
+			children = (
+				3FA169B91D2C978C00B82066 /* Info.plist */,
+			);
+			path = test;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		3FA169A41D2C978C00B82066 /* test */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 3FA169BC1D2C978C00B82066 /* Build configuration list for PBXNativeTarget "test" */;
+			buildPhases = (
+				3FA169A11D2C978C00B82066 /* Sources */,
+				3FA169A21D2C978C00B82066 /* Frameworks */,
+				3FA169A31D2C978C00B82066 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = test;
+			productName = test;
+			productReference = 3FA169A51D2C978C00B82066 /* test.app */;
+			productType = com.apple.product-type.application;
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		3FA1699D1D2C978C00B82066 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 0730;
+				ORGANIZATIONNAME = libphone;
+				TargetAttributes = {
+					3FA169A41D2C978C00B82066 = {
+						CreatedOnToolsVersion = 7.3.1;
+					};
+				};
+			};
+			buildConfigurationList = 3FA169A01D2C978C00B82066 /* Build configuration list for PBXProject "Unity-iPhone" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 3FA1699C1D2C978C00B82066 /*  */;
+			productRefGroup = 3FA169A61D2C978C00B82066 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				3FA169A41D2C978C00B82066 /* test */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		3FA169A31D2C978C00B82066 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		3FA169A11D2C978C00B82066 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				DAFA4D1FB3D89956C7002061 /* libphone.c */,
+				E98C4905B28CB606A908A2ED /* iosphone.m */,
+				EDB64EAFA7744FF9CF6B238E /* test.c */,
+				3BDD40F290F3F147F782AE89 /* testtimer.c */,
+				6EF64D07A665430E778865CB /* testview.c */,
+				35794E4FB600CEDE58496861 /* main.m */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		3FA169BA1D2C978C00B82066 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(SRCROOT)/../../include",
+					"$(SRCROOT)/../../src",
+					"$(SRCROOT)/../../test",
+				);
+				INFOPLIST_FILE = "$(SRCROOT)/Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 8.2;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = libphone.test;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		3FA169BB1D2C978C00B82066 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf-with-dsym;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(SRCROOT)/../../include",
+					"$(SRCROOT)/../../src",
+					"$(SRCROOT)/../../test",
+				);
+				INFOPLIST_FILE = "$(SRCROOT)/Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 8.2;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				PRODUCT_BUNDLE_IDENTIFIER = libphone.test;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		3FA169BD1D2C978C00B82066 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(SRCROOT)/../../include",
+					"$(SRCROOT)/../../src",
+					"$(SRCROOT)/../../test",
+				);
+				INFOPLIST_FILE = "$(SRCROOT)/Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 8.2;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = libphone.test;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		3FA169BE1D2C978C00B82066 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(SRCROOT)/../../include",
+					"$(SRCROOT)/../../src",
+					"$(SRCROOT)/../../test",
+				);
+				INFOPLIST_FILE = "$(SRCROOT)/Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 8.2;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = libphone.test;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		3FA169A01D2C978C00B82066 /* Build configuration list for PBXProject "Unity-iPhone" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3FA169BA1D2C978C00B82066 /* Debug */,
+				3FA169BB1D2C978C00B82066 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		3FA169BC1D2C978C00B82066 /* Build configuration list for PBXNativeTarget "test" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3FA169BD1D2C978C00B82066 /* Debug */,
+				3FA169BE1D2C978C00B82066 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 3FA1699D1D2C978C00B82066 /* Project object */;
+}
