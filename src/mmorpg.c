@@ -218,9 +218,9 @@ static void delTextureRef(texture2d *tex) {
 
 unsigned long long systemNow(void) {
   struct timeval time;
-  long long millisecs;
+  unsigned long long millisecs;
   gettimeofday(&time, 0);
-  millisecs = (long long)(time.tv_sec * 1000) + (time.tv_usec / 1000);
+  millisecs = ((unsigned long long)time.tv_sec * 1000) + (time.tv_usec / 1000);
   return millisecs;
 }
 
@@ -330,7 +330,7 @@ static void drawSprite(sprite2d *sprt) {
 static void drawAllSprites(void) {
   sprite2d *loop = game->firstSprite;
   while (loop) {
-    if (!loop->hidden) {
+    if (!loop->hidden && loop->texId) {
       drawSprite(loop);
     }
     loop = loop->next;
@@ -434,10 +434,19 @@ static duk_ret_t System_now(duk_context *js) {
 static duk_ret_t System_log(duk_context *js) {
   duk_idx_t num = duk_get_top(game->js);
   duk_idx_t i;
-  for (i = 1; i <= num; ++i) {
+  for (i = 0; i < num; ++i) {
     phoneLog(PHONE_LOG_INFO, "MMORPG.js", "%s",
       duk_to_string(game->js, i));
   }
+  return 0;
+}
+
+static duk_ret_t System_register(duk_context *js) {
+  const char *moduleName = duk_to_string(js, 0);
+  duk_push_global_object(js);
+  duk_push_object(js);
+  duk_put_prop_string(js, -2, moduleName);
+  duk_pop(js);
   return 0;
 }
 
@@ -590,6 +599,7 @@ static duk_ret_t Asset_loadImageFrame2D(duk_context *js) {
 const duk_function_list_entry systemFuncs[] = {
   {"now", System_now, 0},
   {"log", System_log, DUK_VARARGS},
+  {"register", System_register, 1},
   {0, 0, 0 }
 };
 
@@ -632,6 +642,7 @@ static void registerJsFunctions(duk_context *js) {
 ///////////////////////////////////////////////////////////////////////////
 
 const char *scriptNameList[] = {
+  "animation2d.js",
   "MMORPG.js"
 };
 
@@ -841,9 +852,6 @@ static void layout(void) {
   float margin;
   float openGLViewTop;
   float padding = dp(10);
-
-  phoneLog(PHONE_LOG_DEBUG, __FUNCTION__, "screenSize: %dx%d",
-    phoneGetViewWidth(0), phoneGetViewHeight(0));
 
   if (phoneGetViewWidth(0) < phoneGetViewHeight(0)) {
     margin = dp(20);
