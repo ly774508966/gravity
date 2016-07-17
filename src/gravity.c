@@ -288,10 +288,10 @@ void sprite2dRender(sprite2d *sprt, imageFrame2d *frame) {
   float spriteTop = sprt->y + frame->offsetY;
   float frameWidthOnTex = frame->fliped ? frame->height : frame->width;
   float frameHeightOnTex = frame->fliped ? frame->width : frame->height;
-  float onCanvasLeft = spriteLeft / (game->width);
-  float onCanvasTop = spriteTop / (game->height);
-  float onCanvasRight = (spriteLeft + frame->width) / (game->width);
-  float onCanvasBottom = (spriteTop + frame->height) / (game->height);
+  float onCanvasLeft = spriteLeft / (game->width) - 1;
+  float onCanvasTop = spriteTop / (game->height) - 1;
+  float onCanvasRight = (spriteLeft + frame->width) / (game->width) - 1;
+  float onCanvasBottom = (spriteTop + frame->height) / (game->height) - 1;
   float texLeft = frame->left / frame->tex->width;
   float texTop = frame->top / frame->tex->height;
   float texRight = (frame->left + frameWidthOnTex) / frame->tex->width;
@@ -792,9 +792,9 @@ static void render(int handle) {
     return;
   }
 
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-  checkOpenGLError();
   glEnable(GL_BLEND);
+  checkOpenGLError();
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   checkOpenGLError();
 
   glClearColor(game->clearColorR, game->clearColorG, game->clearColorB, 1.0);

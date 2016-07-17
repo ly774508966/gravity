@@ -45,6 +45,13 @@ for (var i = 0; i < 7; ++i) {
 }
 runAnimation.setX(128).setY(128);
 
+var wyvernStillAnimation = Animation2D.create();
+for (var i = 0; i < 4; ++i) {
+  wyvernStillAnimation.addFrame(loadImageFrame2DFromTextureInfo("texture.png",
+    textureInfoMap["wyvern_still_1_" + i + ".png"]), 200);
+}
+wyvernStillAnimation.setX(0).setY(128);
+
 var stillAnimation = Animation2D.create();
 for (var i = 0; i < 4; ++i) {
   stillAnimation.addFrame(loadImageFrame2DFromTextureInfo("texture.png",
@@ -62,7 +69,8 @@ for (var i = 0; i < 1024; ++i) {
 //print(textureInfo);
 
 function update() {
-  stillAnimation.update();
   runAnimation.update();
+  wyvernStillAnimation.update();
+  stillAnimation.update();
   //print('now: ' + System.now());
 }

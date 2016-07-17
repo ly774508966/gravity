@@ -42,3 +42,6 @@ if __name__ == "__main__":
     archer.addAnimation("still", 0, 4)
     archer.addAnimation("run", 5, 7)
     archer.output('images')
+    wyvern = FlareExtractor("flare/wyvern_composite.png", 256, 256)
+    wyvern.addAnimation("wyvern_still", 0, 5)
+    wyvern.output('images');
