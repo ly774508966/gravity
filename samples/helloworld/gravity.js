@@ -41,18 +41,16 @@ var textureInfoMap = loadTextureInfoFromJson("texture.json");
 var runAnimation = Animation2D.create();
 for (var i = 0; i < 7; ++i) {
   runAnimation.addFrame(loadImageFrame2DFromTextureInfo("texture.png",
-    textureInfoMap["run_1_" + i + ".png"]), 150);
+    textureInfoMap["run_5_" + i + ".png"]), 150);
 }
 runAnimation.setX(128).setY(128);
 
-/*
 var stillAnimation = Animation2D.create();
 for (var i = 0; i < 4; ++i) {
   stillAnimation.addFrame(loadImageFrame2DFromTextureInfo("texture.png",
-    textureInfoMap["still_0_" + i + ".png"]), 150);
+    textureInfoMap["still_0_" + i + ".png"]), 500);
 }
-stillAnimation.setX(128).setY(128);
-*/
+stillAnimation.setX(64).setY(64);
 
 /*
 var animation = Animation2D.create();
@@ -64,7 +62,7 @@ for (var i = 0; i < 1024; ++i) {
 //print(textureInfo);
 
 function update() {
-  //stillAnimation.update();
+  stillAnimation.update();
   runAnimation.update();
   //print('now: ' + System.now());
 }

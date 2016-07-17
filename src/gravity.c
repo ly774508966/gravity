@@ -286,7 +286,7 @@ void sprite2dSetY(sprite2d *sprt, int y) {
 void sprite2dRender(sprite2d *sprt, imageFrame2d *frame) {
   float spriteLeft = sprt->x + frame->offsetX;
   float spriteTop = sprt->y + frame->offsetY;
-  float framWidthOnTex = frame->fliped ? frame->height : frame->width;
+  float frameWidthOnTex = frame->fliped ? frame->height : frame->width;
   float frameHeightOnTex = frame->fliped ? frame->width : frame->height;
   float onCanvasLeft = spriteLeft / (game->width);
   float onCanvasTop = spriteTop / (game->height);
@@ -294,7 +294,7 @@ void sprite2dRender(sprite2d *sprt, imageFrame2d *frame) {
   float onCanvasBottom = (spriteTop + frame->height) / (game->height);
   float texLeft = frame->left / frame->tex->width;
   float texTop = frame->top / frame->tex->height;
-  float texRight = (frame->left + framWidthOnTex) / frame->tex->width;
+  float texRight = (frame->left + frameWidthOnTex) / frame->tex->width;
   float texBottom = (frame->top + frameHeightOnTex) / frame->tex->height;
   vertex vertices[4];
   if (frame->fliped) {
@@ -479,7 +479,7 @@ static duk_ret_t System_log(duk_context *js) {
   duk_idx_t num = duk_get_top(js);
   duk_idx_t i;
   for (i = 0; i < num; ++i) {
-    phoneLog(PHONE_LOG_INFO, "MMORPG.js", "%s",
+    phoneLog(PHONE_LOG_INFO, "gravity", "%s",
       duk_to_string(game->js, i));
   }
   return 0;

@@ -1,7 +1,7 @@
 System.register("Animation2D");
 
 Animation2D.create = function() {
-  var _this = this;
+  var _this = {};
 
   _this.lastStopTime = 0;
   _this.startTime = System.now();
@@ -49,5 +49,6 @@ Animation2D.create = function() {
     }
     return _this;
   }
+
   return _this;
 };
