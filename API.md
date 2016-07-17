@@ -15,8 +15,9 @@
 
 # ImageFrame2D
 
-### ImageFrame2D.rotate(degree)
-### ImageFrame2D.setCenter(x, y)
+### ImageFrame2D.flip()
+### ImageFrame2D.setOffsetX(x)
+### ImageFrame2D.setOffsetY(y)
 
 # Sprite2D
 
@@ -33,3 +34,4 @@
 ### System.now()
 ### System.log(...)
 ### System.register(moduleName)
+### System.setBackgroundColor(color)

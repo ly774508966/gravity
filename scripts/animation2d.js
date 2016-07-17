@@ -13,11 +13,22 @@ Animation2D.create = function() {
   _this.addFrame = function(imageFrame, duration) {
     _this.frameList.push([imageFrame, _this.lastStopTime + duration]);
     _this.lastStopTime += duration;
+    return _this;
+  }
+
+  _this.setX = function(x) {
+    _this.sprite.setX(x);
+    return _this;
+  }
+
+  _this.setY = function(y) {
+    _this.sprite.setY(y);
+    return _this;
   }
 
   _this.update = function() {
     if (0 == _this.frameList.length) {
-      return;
+      return _this;
     }
     var roundFinished = false;
     var elapsedTime = System.now() - _this.startTime;
@@ -36,6 +47,7 @@ Animation2D.create = function() {
       _this.startTime = System.now();
       _this.currentFrameIndex = 0;
     }
+    return _this;
   }
   return _this;
 };
