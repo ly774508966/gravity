@@ -803,6 +803,8 @@ static void render(int handle) {
   checkOpenGLError();
   glEnable(GL_DEPTH_TEST);
   checkOpenGLError();
+  glDepthFunc(GL_LEQUAL);
+  checkOpenGLError();
 
   if (!game->inited) {
     matrixLoadIdentity(&game->unrotatedMatrix);
