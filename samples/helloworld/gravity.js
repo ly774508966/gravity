@@ -50,7 +50,7 @@ for (var i = 0; i < 4; ++i) {
   wyvernStillAnimation.addFrame(loadImageFrame2DFromTextureInfo("texture.png",
     textureInfoMap["wyvern_still_1_" + i + ".png"]), 200);
 }
-wyvernStillAnimation.setX(0).setY(128);
+wyvernStillAnimation.setX(0).setY(128).setLayer(2);
 
 var stillAnimation = Animation2D.create();
 for (var i = 0; i < 4; ++i) {

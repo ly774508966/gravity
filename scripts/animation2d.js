@@ -26,6 +26,11 @@ Animation2D.create = function() {
     return _this;
   }
 
+  _this.setLayer = function(layer) {
+    _this.sprite.setLayer(layer);
+    return _this;
+  }
+
   _this.update = function() {
     if (0 == _this.frameList.length) {
       return _this;

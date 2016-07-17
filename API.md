@@ -28,6 +28,7 @@
 ### Sprite2D.setX(x)
 ### Sprite2D.setY(y)
 ### Sprite2D.show()
+### Sprite2D.setLayer(layer)
 
 # System
 

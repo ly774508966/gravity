@@ -78,7 +78,8 @@ typedef struct sprite2d {
   vertex vertices[4];
   struct sprite2d *prev;
   struct sprite2d *next;
-  //int rotated:1;
+  int layer;
+  int roundId;
 } sprite2d;
 
 typedef struct gameContext {
@@ -107,6 +108,7 @@ typedef struct gameContext {
   float clearColorR;
   float clearColorG;
   float clearColorB;
+  int roundId;
 } gameContext;
 
 static gameContext gameStruct = {0};
@@ -249,6 +251,10 @@ void systemSetBackgroundColor(int color) {
     (void *)((char *)0 + color));
 }
 
+void sprite2dSetLayer(sprite2d *sprt, int layer) {
+  sprt->layer = layer;
+}
+
 sprite2d *sprite2dCreate(void) {
   sprite2d *sprt = (sprite2d *)calloc(1, sizeof(sprite2d));
   if (!sprt) {
@@ -376,9 +382,22 @@ static void drawSprite(sprite2d *sprt) {
 }
 
 static void drawAllSprites(void) {
-  sprite2d *loop = game->firstSprite;
+  sprite2d *loop;
+  int layer = 0;
+  game->roundId += 1;
+  for (layer = 0; layer <= 3; ++layer) {
+    loop = game->firstSprite;
+    while (loop) {
+      if (!loop->hidden && loop->texId && layer == loop->layer) {
+        loop->roundId = game->roundId;
+        drawSprite(loop);
+      }
+      loop = loop->next;
+    }
+  }
+  loop = game->firstSprite;
   while (loop) {
-    if (!loop->hidden && loop->texId) {
+    if (!loop->hidden && loop->texId && loop->roundId != game->roundId) {
       drawSprite(loop);
     }
     loop = loop->next;
@@ -507,6 +526,14 @@ static duk_ret_t Sprite2D_remove(duk_context *js) {
   return 1;
 }
 
+static duk_ret_t Sprite2D_setLayer(duk_context *js) {
+  sprite2d *sprt = getRawPointerFromThis(js);
+  int layer = duk_to_int(js, 0);
+  sprite2dSetLayer(sprt, layer);
+  duk_push_this(js);
+  return 1;
+}
+
 static duk_ret_t Sprite2D_show(duk_context *js) {
   sprite2d *sprt = getRawPointerFromThis(js);
   sprite2dShow(sprt);
@@ -560,6 +587,8 @@ static void pushSprite2dFromRawPointer(duk_context *js,
   duk_put_prop_string(js, -2, "setY");
   duk_push_c_function(js, Sprite2D_render, 1);
   duk_put_prop_string(js, -2, "render");
+  duk_push_c_function(js, Sprite2D_setLayer, 1);
+  duk_put_prop_string(js, -2, "setLayer");
   duk_push_pointer(js, sprt);
   duk_put_prop_string(js, -2, "_rawpointer");
 }
@@ -570,6 +599,7 @@ static duk_ret_t Sprite2D_create(duk_context *js) {
     phoneLog(PHONE_LOG_ERROR, __FUNCTION__, "sprite2dCreate failed");
     return 0;
   }
+  sprt->layer = 1;
   pushSprite2dFromRawPointer(js, sprt);
   return 1;
 }

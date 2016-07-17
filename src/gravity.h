@@ -15,6 +15,7 @@ void sprite2dSetY(sprite2d *sprt, int y);
 void sprite2dSetWidth(sprite2d *sprt, int width);
 void sprite2dSetHeight(sprite2d *sprt, int height);
 void sprite2dRender(sprite2d *sprt, imageFrame2d *frame);
+void sprite2dSetLayer(sprite2d *sprt, int layer);
 char *assetLoadString(const char *assetName, int *len);
 imageFrame2d *assetLoadImageFrame2d(const char *assetName, int left, int top,
   int width, int height);
