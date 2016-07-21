@@ -299,7 +299,7 @@ void sprite2dSetY(sprite2d *sprt, int y) {
 
 void sprite2dRender(sprite2d *sprt, imageFrame2d *frame) {
   float spriteLeft = sprt->x + frame->offsetX;
-  float spriteTop = sprt->y + frame->offsetY;
+  float spriteTop = (game->height - sprt->y) + frame->offsetY;
   float frameWidthOnTex = frame->fliped ? frame->height : frame->width;
   float frameHeightOnTex = frame->fliped ? frame->width : frame->height;
   float onCanvasLeft = spriteLeft / (game->width) - 1;
