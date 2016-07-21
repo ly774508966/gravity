@@ -238,6 +238,14 @@ unsigned long long systemNow(void) {
   return millisecs;
 }
 
+int systemGetWidth(void) {
+  return game->width;
+}
+
+int systemGetHeight(void) {
+  return game->height;
+}
+
 static void setStatusBarBackgroundColor(void *tag) {
   int color = (char *)tag - 0;
   phoneSetStatusBarBackgroundColor(color);
@@ -326,6 +334,7 @@ void sprite2dRender(sprite2d *sprt, imageFrame2d *frame) {
     memcpy(sprt->vertices, vertices, sizeof(vertices));
     if (0 == sprt->vertexBuffer) {
       glGenBuffers(1, &sprt->vertexBuffer);
+      assert(sprt->vertexBuffer);
       checkOpenGLError();
     }
     glBindBuffer(GL_ARRAY_BUFFER, sprt->vertexBuffer);
@@ -464,6 +473,13 @@ void imageFrame2dSetOffsetY(imageFrame2d *frame, int offsetY) {
   frame->offsetY = (float)offsetY;
 }
 
+void imageFrame2dDispose(imageFrame2d *frame) {
+  if (frame->tex) {
+    delTextureRef(frame->tex);
+    frame->tex = 0;
+  }
+}
+
 //////////////////////////////////////////////////////////////////////////
 
 /////////////////////////////// JS UTIL //////////////////////////////////
@@ -491,6 +507,16 @@ static void *getRawPointerFromIndex(duk_context *js, duk_idx_t index) {
 
 static duk_ret_t System_now(duk_context *js) {
   duk_push_number(js, systemNow());
+  return 1;
+}
+
+static duk_ret_t System_getWidth(duk_context *js) {
+  duk_push_int(js, systemGetWidth());
+  return 1;
+}
+
+static duk_ret_t System_getHeight(duk_context *js) {
+  duk_push_int(js, systemGetHeight());
   return 1;
 }
 
@@ -627,6 +653,13 @@ static duk_ret_t ImageFrame2D_setOffsetY(duk_context *js) {
   return 1;
 }
 
+static duk_ret_t imageFrame2D_Dispose(duk_context *js) {
+  imageFrame2d *frame = getRawPointerFromThis(js);
+  imageFrame2dDispose(frame);
+  duk_push_this(js);
+  return 1;
+}
+
 static void pushImageFrame2dFromRawPointer(duk_context *js,
     imageFrame2d *frame) {
   duk_push_object(js);
@@ -636,6 +669,8 @@ static void pushImageFrame2dFromRawPointer(duk_context *js,
   duk_put_prop_string(js, -2, "setOffsetX");
   duk_push_c_function(js, ImageFrame2D_setOffsetY, 1);
   duk_put_prop_string(js, -2, "setOffsetY");
+  duk_push_c_function(js, imageFrame2D_Dispose, 0);
+  duk_put_prop_string(js, -2, "Dispose");
   duk_push_pointer(js, frame);
   duk_put_prop_string(js, -2, "_rawpointer");
 }
@@ -679,6 +714,8 @@ const duk_function_list_entry systemFuncs[] = {
   {"log", System_log, DUK_VARARGS},
   {"register", System_register, 1},
   {"setBackgroundColor", System_setBackgroundColor, 1},
+  {"getWidth", System_getWidth, 0},
+  {"getHeight", System_getHeight, 0},
   {0, 0, 0 }
 };
 
@@ -722,6 +759,7 @@ static void registerJsFunctions(duk_context *js) {
 
 const char *scriptNameList[] = {
   "animation2d.js",
+  "map2d.js",
   "gravity.js"
 };
 

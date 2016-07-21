@@ -36,6 +36,12 @@ function loadTextureInfoFromJson(jsonName) {
   return textureInfoMap;
 }
 
+function loadObjectFromJson(jsonName) {
+  var obj = {};
+  eval('obj = ' + Asset.loadString(jsonName));
+  return obj;
+}
+
 var textureInfoMap = loadTextureInfoFromJson("texture.json");
 
 var runAnimation = Animation2D.create();
@@ -59,16 +65,20 @@ for (var i = 0; i < 4; ++i) {
 }
 stillAnimation.setX(64).setY(64);
 
-/*
+var map = Map2D.create();
+var tilemap = loadObjectFromJson('world.json');
+map.loadFromTiledMap(tilemap);
+
 var animation = Animation2D.create();
 for (var i = 0; i < 1024; ++i) {
   animation.addFrame(Asset.loadImageFrame2D("texture.png",
     i, 0, 128, 128), 150);
   i += 128;
-}*/
+}
 //print(textureInfo);
 
 function update() {
+  map.update();
   runAnimation.update();
   wyvernStillAnimation.update();
   stillAnimation.update();

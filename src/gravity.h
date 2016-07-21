@@ -6,6 +6,8 @@ typedef struct imageFrame2d imageFrame2d;
 
 unsigned long long systemNow(void);
 void systemSetBackgroundColor(int color);
+int systemGetWidth(void);
+int systemGetHeight(void);
 sprite2d *sprite2dCreate(void);
 void sprite2dRemove(sprite2d *sprt);
 void sprite2dShow(sprite2d *sprt);
@@ -22,5 +24,6 @@ imageFrame2d *assetLoadImageFrame2d(const char *assetName, int left, int top,
 void imageFrame2dFlip(imageFrame2d *frame);
 void imageFrame2dSetOffsetX(imageFrame2d *frame, int width);
 void imageFrame2dSetOffsetY(imageFrame2d *frame, int height);
+void imageFrame2dDispose(imageFrame2d *frame);
 
 #endif

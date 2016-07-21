@@ -7,6 +7,7 @@
 ### Animation2D.setX(x)
 ### Animation2D.setY(y)
 ### Animation2D.show()
+### Animation2D.dispose()
 
 # Asset
 
@@ -18,6 +19,7 @@
 ### ImageFrame2D.flip()
 ### ImageFrame2D.setOffsetX(x)
 ### ImageFrame2D.setOffsetY(y)
+### ImageFrame2D.dispose()
 
 # Sprite2D
 
@@ -36,3 +38,5 @@
 ### System.log(...)
 ### System.register(moduleName)
 ### System.setBackgroundColor(color)
+### System.getWidth()
+### System.getHeight()
