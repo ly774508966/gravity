@@ -36,10 +36,14 @@ Map2D.create = function() {
     var startTileRow = startY / self.tileHeight;
     var startTileOffsetY = startY % self.tileHeight;
     var index = 0;
-    for (var col = 0; col < self.spriteCols; ++col) {
-      for (var row = 0; row < self.spriteRows; ++row) {
-        var tileIndex = row * self.tileWidth + col;
-        var dispId = parseInt(self.tileData[tileIndex]);
+    for (var row = 0; row < self.spriteRows && row < self.worldRows; ++row) {
+      for (var col = 0; col < self.spriteCols && col < self.worldCols; ++col) {
+        var tileIndex = row * self.worldCols + col;
+        var dispId = parseInt(self.tileData[tileIndex]) - 1;
+        if (dispId < 0) {
+          index += 1;
+          continue;
+        }
         var tilesetRow = parseInt(dispId / 16);
         var tilesetCol = dispId % 16;
         var tilename = 'base_' + tilesetRow + '_' + tilesetCol + '.png';
@@ -54,6 +58,7 @@ Map2D.create = function() {
           self.animationNames[index] = tilename;
           animation.clear();
           animation.addFrame(frame, 1000);
+          animation.update();
         }
         index += 1;
       }
@@ -61,22 +66,33 @@ Map2D.create = function() {
     return self;
   }
 
+  self.mapToScreen = function(x, y) {
+    return [(x - y) * self.tileWidth / 2, (x + y) * self.tileHeight / 2];
+  }
+
+  self.screenToMap = function(x, y) {
+    return [(x / (self.tileWidth / 2) + y / (self.tileHeight / 2)) / 2,
+      (y / (self.tileHeight / 2) - (x / (self.tileWidth / 2))) / 2];
+  }
+
   self.loadFromTiledMap = function(obj) {
-    self.tileWidth = obj.tilewidth;
-    self.tileHeight = obj.tileheight;
-    self.worldWidth = obj.width * obj.tilewidth;
-    self.worldHeight = obj.height * obj.tileheight;
+    self.tileWidth = parseInt(obj.tilewidth);
+    self.tileHeight = parseInt(obj.tileheight);
+    self.worldCols = parseInt(obj.width);
+    self.worldRows = parseInt(obj.height);
+    self.worldWidth = self.worldCols * obj.tilewidth;
+    self.worldHeight = self.worldRows * obj.tileheight;
     self.tileData = obj.layers[0].data;
     self.screenWidth = System.getWidth();
     self.screenHeight = System.getHeight();
-    self.spriteCols = parseInt(self.screenWidth * 4 / self.tileWidth);
-    self.spriteRows = parseInt(self.screenHeight * 8 / self.tileHeight);
-    for (var col = 0; col < self.spriteCols; ++col) {
-      for (var row = 0; row < self.spriteRows; ++row) {
+    self.spriteCols = 10;//parseInt(self.screenWidth / self.tileWidth);
+    self.spriteRows = 10;//parseInt(self.screenHeight / self.tileHeight);
+    for (var row = 0; row < self.spriteRows; ++row) {
+      for (var col = 0; col < self.spriteCols; ++col) {
         var animation = Animation2D.create();
-        animation.setX((col - self.spriteCols / 4) * self.tileWidth +
-          ((row % 2) ? self.tileWidth / 2 : 0));
-        animation.setY((row - self.spriteRows / 4) * (self.tileHeight / 2));
+        var screenPos = self.mapToScreen(col, row);
+        animation.setX(screenPos[0]);
+        animation.setY(screenPos[1]);
         animation.setLayer(0);
         self.animations.push(animation);
         self.animationNames.push('');
@@ -94,17 +110,11 @@ Map2D.create = function() {
     }
     self.centerX = x;
     self.centerY = y;
+    self.loadAnimations();
     return self;
   }
 
   self.update = function() {
-    var index = 0;
-    for (var col = 0; col < self.spriteCols; ++col) {
-      for (var row = 0; row < self.spriteRows; ++row) {
-        self.animations[index].update();
-        index += 1;
-      }
-    }
     return self;
   }
 
@@ -114,6 +124,8 @@ Map2D.create = function() {
   self.tileHeight = 0;
   self.worldWidth = 0;
   self.worlHeight = 0;
+  self.worldCols = 0;
+  self.worldRows = 0;
   self.animationCols = 0;
   self.animationRows = 0;
   self.animations = [];

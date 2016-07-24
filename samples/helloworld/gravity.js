@@ -63,18 +63,19 @@ for (var i = 0; i < 4; ++i) {
   stillAnimation.addFrame(loadImageFrame2DFromTextureInfo("texture.png",
     textureInfoMap["still_0_" + i + ".png"]), 500);
 }
-stillAnimation.setX(64).setY(64);
+stillAnimation.setX(0).setY(0);
 
 var map = Map2D.create();
 var tilemap = loadObjectFromJson('world.json');
 map.loadFromTiledMap(tilemap);
 
+/*
 var animation = Animation2D.create();
 for (var i = 0; i < 1024; ++i) {
   animation.addFrame(Asset.loadImageFrame2D("texture.png",
     i, 0, 128, 128), 150);
   i += 128;
-}
+}*/
 //print(textureInfo);
 
 function update() {
