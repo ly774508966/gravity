@@ -9,6 +9,7 @@ Animation2D.create = function() {
     self.lastStopTime = 0;
     self.currentFrameIndex = 0;
     self.startTime = System.now();
+    self.changed = false;
   }
 
   self.addFrame = function(imageFrame, duration) {
@@ -19,11 +20,13 @@ Animation2D.create = function() {
 
   self.setX = function(x) {
     self.sprite.setX(x);
+    self.changed = true;
     return self;
   }
 
   self.setY = function(y) {
     self.sprite.setY(y);
+    self.changed = true;
     return self;
   }
 
@@ -48,6 +51,11 @@ Animation2D.create = function() {
     if (self.lastFrameIndex != self.currentFrameIndex) {
       self.sprite.render(self.frameList[self.currentFrameIndex][0]);
       self.lastFrameIndex = self.currentFrameIndex;
+    } else {
+      if (self.changed) {
+        self.sprite.render(self.frameList[self.currentFrameIndex][0]);
+        self.changed = false;
+      }
     }
     if (roundFinished) {
       self.startTime = System.now();
