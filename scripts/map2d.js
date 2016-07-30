@@ -16,6 +16,9 @@ Map2D.create = function() {
   self.loadImageFrame2DFromTextureInfo = function(textureName, info) {
     var frame = Asset.loadImageFrame2D(textureName,
       info.left, info.top, info.width, info.height);
+    if (undefined == frame) {
+      return undefined;
+    }
     if ('1' == info.rotated) {
       frame.flip();
     }
@@ -85,6 +88,84 @@ Map2D.create = function() {
     animation.update();
   }
 
+  self.allocAnimation = function() {
+    if (self.freeAnimationLink.length) {
+      var ret = self.freeAnimationLink[0];
+      self.freeAnimationLink.shift();
+      return ret;
+    }
+    return Animation2D.create();
+  }
+
+  self.updateAnimationContent = function(animation, col, row) {
+    var tileIndex = row * self.worldCols + col;
+    var dispId = parseInt(self.tileData[tileIndex]) - 1;
+    if (dispId < 0) {
+      return;
+    }
+    var tilesetRow = parseInt(dispId / 16);
+    var tilesetCol = dispId % 16;
+    var tilename = 'base_' + tilesetRow + '_' + tilesetCol + '.png';
+    var frame = self.imageFrameMap[tilename];
+    if (undefined == frame) {
+      System.log('tilename: ' + tilename + ' col: ' + col + ' row: ' + row);
+      if (undefined == self.textureInfoMap[tilename]) {
+        return;
+      }
+      frame = self.loadImageFrame2DFromTextureInfo("texture.png",
+        self.textureInfoMap[tilename]);
+      if (undefined == frame) {
+        return;
+      }
+      self.imageFrameMap[tilename] = frame;
+    }
+    animation.clear();
+    animation.addFrame(frame, 1000);
+  }
+
+  self.loadTile = function(col, row) {
+    if (col < 0 || row < 0) {
+      return false;
+    }
+    var offsetX = col - self.centerX;
+    var offsetY = row - self.centerY;
+    var screenPos = self.mapToScreen(self.origin[0] + offsetX,
+      self.origin[1] + offsetY);
+      /*
+    if (screenPos[0] < -self.tileWidth || screenPos[0] > self.screenWidth ||
+        screenPos[1] < -self.tileHeight || screenPos[1] > self.screenHeight) {
+      return false;
+    }*/
+    //System.log('screenPos: [' + screenPos[0] + ', ' + screenPos[1] + '] col: ' + col + ' row: ' + row);
+    var animation = self.allocAnimation();
+    animation.show();
+    animation.setLayer(0);
+    animation.setX(screenPos[0]);
+    animation.setY(screenPos[1]);
+    self.updateAnimationContent(animation, col, row);
+    animation.update();
+    self.usedAnimationLink.push(animation);
+    return true;
+  }
+
+  self.dynamicLoad = function() {
+    while (self.usedAnimationLink.length) {
+      self.usedAnimationLink[0].hide();
+      self.freeAnimationLink.push(self.usedAnimationLink[0]);
+      self.usedAnimationLink.shift();
+    }
+    var col = Math.floor(self.centerX);
+    var row = Math.floor(self.centerY);
+    for (var i = 0; i < self.origin[0] + self.origin[0]; ++i) {
+      for (var j = 0; j < self.origin[1] + self.origin[1]; ++j) {
+        self.loadTile(col + i, row + j);
+        self.loadTile(col + i, row - j);
+        self.loadTile(col - i, row + j);
+        self.loadTile(col - i, row - j);
+      }
+    }
+  }
+
   self.loadFromTiledMap = function(obj) {
     self.tileWidth = parseInt(obj.tilewidth);
     self.tileHeight = parseInt(obj.tileheight);
@@ -101,6 +182,10 @@ Map2D.create = function() {
     self.centerY = 0;
     self.origin = self.screenToMap(self.screenWidth / 2 - self.tileWidth / 4,
       self.screenHeight / 2 - self.tileHeight / 4);
+    self.centerX += 50.05;
+    self.centerY += 50.05;
+    self.dynamicLoad();
+    /*
     System.log('center: [' + self.origin[0] + ', ' + self.origin[1] + ']');
     for (var row = 0; row < self.spriteRows; ++row) {
       for (var col = 0; col < self.spriteCols; ++col) {
@@ -115,31 +200,28 @@ Map2D.create = function() {
         //self.updateTilePosition(col, row);
       }
     }
-    self.loadAnimations();
+    self.loadAnimations();*/
     return self;
   }
 
   self.setCenter = function(x, y) {
+    /*
     if (self.centerX == x && self.centerY == y) {
       return self;
     }
     self.centerX = x;
     self.centerY = y;
-    self.loadAnimations();
+    self.loadAnimations();*/
     return self;
   }
 
   self.update = function() {
-    if (0 == self.animations.length) {
-      return self;
-    }
-    self.centerX += 0.05;
-    self.centerY += 0.05;
-    for (var row = 0; row < self.spriteRows; ++row) {
-      for (var col = 0; col < self.spriteCols; ++col) {
-        self.updateTilePosition(col, row);
-      }
-    }
+    //self.centerX += 0.05;
+    //self.centerY += 0.05;
+    var before = System.now();
+    System.log("before update: " + System.now());
+    self.dynamicLoad();
+    System.log("after update: " + System.now() + " elapsed: " + (System.now() - before));
     return self;
   }
 
@@ -161,6 +243,8 @@ Map2D.create = function() {
   self.imageFrameMap = {};
   self.animationMap = {};
   self.textureInfoMap = self.loadTextureInfoFromJson("texture.json");
+  self.usedAnimationLink = [];
+  self.freeAnimationLink = [];
 
   return self;
 }

@@ -74,7 +74,6 @@ typedef struct sprite2d {
   int hidden;
   int x;
   int y;
-  GLuint vertexBuffer;
   vertex vertices[4];
   struct sprite2d *prev;
   struct sprite2d *next;
@@ -97,8 +96,8 @@ typedef struct gameContext {
   GLuint textureUniform;
   GLuint rotationMatrixSlot;
   GLuint indexBuffer;
+  GLuint vertexBuffer;
   matrix unrotatedMatrix;
-  //matrix rotatedMatrix;
   int disableOpenGLErrorOutput:1;
   int inited:1;
   texture2d *firstTex;
@@ -273,10 +272,11 @@ sprite2d *sprite2dCreate(void) {
 }
 
 void sprite2dRemove(sprite2d *sprt) {
+  /*
   if (sprt->vertexBuffer) {
     glDeleteBuffers(1, &sprt->vertexBuffer);
     sprt->vertexBuffer = 0;
-  }
+  }*/
   removeFromLink(sprt, game->firstSprite, game->lastSprite);
   free(sprt);
 }
@@ -329,6 +329,11 @@ void sprite2dRender(sprite2d *sprt, imageFrame2d *frame) {
     };
     memcpy(vertices, unrotatedVertices, sizeof(vertices));
   }
+  if (0 != memcmp(sprt->vertices, vertices, sizeof(vertices))) {
+    sprt->texId = frame->tex->id;
+    memcpy(sprt->vertices, vertices, sizeof(vertices));
+  }
+  /*
   if (!sprt->vertexBuffer ||
       0 != memcmp(sprt->vertices, vertices, sizeof(vertices))) {
     sprt->texId = frame->tex->id;
@@ -345,9 +350,10 @@ void sprite2dRender(sprite2d *sprt, imageFrame2d *frame) {
     checkOpenGLError();
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     checkOpenGLError();
-  }
+  }*/
 }
 
+/*
 static void drawSprite(sprite2d *sprt) {
   glActiveTexture(GL_TEXTURE0);
   checkOpenGLError();
@@ -357,10 +363,9 @@ static void drawSprite(sprite2d *sprt) {
   glUniform1i(game->textureUniform, 0);
   checkOpenGLError();
 
-  /*
-  glUniformMatrix4fv(game->rotationMatrixSlot, 1, GL_FALSE,
-    sprt->rotated ? &game->rotatedMatrix.data[0] :
-      &game->unrotatedMatrix.data[0]);*/
+  //glUniformMatrix4fv(game->rotationMatrixSlot, 1, GL_FALSE,
+  //  sprt->rotated ? &game->rotatedMatrix.data[0] :
+  //    &game->unrotatedMatrix.data[0]);
   glUniformMatrix4fv(game->rotationMatrixSlot, 1, GL_FALSE,
     &game->unrotatedMatrix.data[0]);
 
@@ -389,8 +394,116 @@ static void drawSprite(sprite2d *sprt) {
 
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
   checkOpenGLError();
+}*/
+
+
+static void drawAllSprites(void) {
+  sprite2d *loop;
+  int num = 0;
+  GLubyte *indices = 0;
+  vertex *vertices = 0;
+  GLuint texId = 0;
+  int indiceOffset = 0;
+  int verticeOffset = 0;
+  int indiceAdd = 0;
+
+  loop = game->firstSprite;
+  while (loop) {
+    if (!loop->hidden && loop->texId) {
+      if (0 == texId) {
+        texId = loop->texId;
+      }
+      ++num;
+    }
+    loop = loop->next;
+  }
+
+  indices = (GLubyte *)calloc(num, sizeof(fixedIndices));
+  vertices = (vertex *)calloc(num, sizeof(vertex) * 4);
+
+  glActiveTexture(GL_TEXTURE0);
+  checkOpenGLError();
+
+  glBindTexture(GL_TEXTURE_2D, texId);
+  checkOpenGLError();
+  glUniform1i(game->textureUniform, 0);
+  checkOpenGLError();
+
+  //glUniformMatrix4fv(game->rotationMatrixSlot, 1, GL_FALSE,
+  //  sprt->rotated ? &game->rotatedMatrix.data[0] :
+  //    &game->unrotatedMatrix.data[0]);
+  glUniformMatrix4fv(game->rotationMatrixSlot, 1, GL_FALSE,
+    &game->unrotatedMatrix.data[0]);
+
+  loop = game->firstSprite;
+  num = 0;
+  while (loop) {
+    if (!loop->hidden && loop->texId) {
+      int i;
+      memcpy((char *)vertices + verticeOffset,
+        loop->vertices, sizeof(loop->vertices));
+      verticeOffset += sizeof(loop->vertices);
+      for (i = 0; i < sizeof(fixedIndices); ++i) {
+        indices[indiceOffset + i] = indiceAdd + fixedIndices[i];
+      }
+      indiceOffset += sizeof(fixedIndices);
+      indiceAdd += 4;
+      ++num;
+    }
+    loop = loop->next;
+  }
+
+  phoneLog(PHONE_LOG_DEBUG, __FUNCTION__, "sprite num:%d", num);
+
+  if (0 == game->vertexBuffer) {
+    glGenBuffers(1, &game->vertexBuffer);
+    assert(game->vertexBuffer);
+    checkOpenGLError();
+  }
+
+  if (0 == game->indexBuffer) {
+    glGenBuffers(1, &game->indexBuffer);
+    assert(game->indexBuffer);
+    checkOpenGLError();
+  }
+
+  glBindBuffer(GL_ARRAY_BUFFER, game->vertexBuffer);
+  checkOpenGLError();
+  glBufferData(GL_ARRAY_BUFFER, num * sizeof(vertex) * 4, vertices,
+    GL_STATIC_DRAW);
+  checkOpenGLError();
+
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, game->indexBuffer);
+  checkOpenGLError();
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, num * sizeof(fixedIndices), indices,
+    GL_STATIC_DRAW);
+  checkOpenGLError();
+
+  glVertexAttribPointer(game->positionSlot, 3, GL_FLOAT, GL_FALSE,
+      sizeof(vertex), 0);
+  checkOpenGLError();
+  glVertexAttribPointer(game->texCoordSlot, 2, GL_FLOAT, GL_FALSE,
+      sizeof(vertex), (GLvoid*)(sizeof(float) * 3));
+  checkOpenGLError();
+
+  glDrawElements(GL_TRIANGLES, num * (sizeof(fixedIndices) /
+      sizeof(fixedIndices[0])), GL_UNSIGNED_BYTE, 0);
+  checkOpenGLError();
+
+  glBindTexture(GL_TEXTURE_2D, 0);
+  checkOpenGLError();
+
+  glBindBuffer(GL_ARRAY_BUFFER, 0);
+  checkOpenGLError();
+
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+  checkOpenGLError();
+
+  free(indices);
+  free(vertices);
 }
 
+/*
 static void drawAllSprites(void) {
   sprite2d *loop;
   int layer = 0;
@@ -412,7 +525,7 @@ static void drawAllSprites(void) {
     }
     loop = loop->next;
   }
-}
+}*/
 
 char *assetLoadString(const char *assetName, int *len) {
   int fileSize;
@@ -928,6 +1041,7 @@ static void render(int handle) {
     glEnableVertexAttribArray(game->positionSlot);
     checkOpenGLError();
 
+    /*
     glGenBuffers(1, &game->indexBuffer);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, game->indexBuffer);
     checkOpenGLError();
@@ -935,6 +1049,7 @@ static void render(int handle) {
       GL_STATIC_DRAW);
     checkOpenGLError();
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    */
 
     initJavascript();
 

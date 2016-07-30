@@ -49,7 +49,7 @@ for (var i = 0; i < 7; ++i) {
   runAnimation.addFrame(loadImageFrame2DFromTextureInfo("texture.png",
     textureInfoMap["run_6_" + i + ".png"]), 150);
 }
-runAnimation.setX(128).setY(128);
+runAnimation.setX(System.getWidth() / 2 + 64).setY(System.getHeight() / 2 + 64);
 
 var wyvernStillAnimation = Animation2D.create();
 for (var i = 0; i < 4; ++i) {

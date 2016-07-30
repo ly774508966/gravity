@@ -35,6 +35,16 @@ Animation2D.create = function() {
     return self;
   }
 
+  self.hide = function() {
+    self.sprite.hide();
+    return self;
+  }
+
+  self.show = function() {
+    self.sprite.show();
+    return self;
+  }
+
   self.update = function() {
     if (0 == self.frameList.length) {
       return self;
