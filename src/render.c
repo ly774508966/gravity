@@ -3,11 +3,10 @@
 #include <string.h>
 #include <sys/time.h>
 #include <assert.h>
-#include "gravity.h"
-#include "duktape.h"
+#include "render.h"
 #include "libphone.h"
 #include "upng.h"
-#include "matrix.h"
+#include "link.h"
 
 #if __ANDROID__
 jint JNI_OnLoad(JavaVM *vm, void *reserved) {
@@ -31,9 +30,8 @@ int main(int argc, char *argv[]) {
   "attribute vec4 Position;"                                      \
   "attribute vec2 TexCoordIn;"                                    \
   "varying vec2 TexCoordOut;"                                     \
-  "uniform mat4 rotationMatrixIn;"                                \
   "void main(void) {"                                             \
-  "    gl_Position = rotationMatrixIn * Position;"                \
+  "    gl_Position = Position;"                                   \
   "    TexCoordOut = TexCoordIn;"                                 \
   "}"
 
@@ -74,15 +72,29 @@ typedef struct sprite2d {
   int hidden;
   int x;
   int y;
+  GLuint vertexBuffer;
   vertex vertices[4];
   struct sprite2d *prev;
   struct sprite2d *next;
   int layer;
-  int roundId;
 } sprite2d;
 
+typedef struct imageFrame2dNode {
+  struct imageFrame2dNode *next;
+  struct imageFrame2dNode *prev;
+  imageFrame2d *frame;
+  unsigned int stopDuration;
+} imageFrame2dNode;
+
+typedef struct animation2d {
+  imageFrame2dNode *firstFrame;
+  imageFrame2dNode *lastFrame;
+  imageFrame2dNode *currentFrame;
+  unsigned int lastStopDuration;
+  unsigned long long startTime;
+} animation2d;
+
 typedef struct gameContext {
-  duk_context *js;
   int glView;
   volatile int width;
   volatile int height;
@@ -94,49 +106,20 @@ typedef struct gameContext {
   GLuint program;
   GLuint texCoordSlot;
   GLuint textureUniform;
-  GLuint rotationMatrixSlot;
   GLuint indexBuffer;
-  GLuint vertexBuffer;
-  matrix unrotatedMatrix;
   int disableOpenGLErrorOutput:1;
   int inited:1;
   texture2d *firstTex;
   texture2d *lastTex;
-  sprite2d *firstSprite;
-  sprite2d *lastSprite;
+  sprite2d *firstSprite[MAX_LAYER + 1];
+  sprite2d *lastSprite[MAX_LAYER + 1];
   float clearColorR;
   float clearColorG;
   float clearColorB;
-  int roundId;
 } gameContext;
 
 static gameContext gameStruct = {0};
 static gameContext *game = &gameStruct;
-
-#define addToLink(item, first, last) do {         \
-  (item)->prev = (last);                          \
-  if (last) {                                     \
-    (last)->next = (item);                        \
-  } else {                                        \
-    (first) = (item);                             \
-  }                                               \
-  (last) = (item);                                \
-} while (0)
-
-#define removeFromLink(item, first, last) do {    \
-  if ((item)->prev) {                             \
-    (item)->prev->next = (item)->next;            \
-  }                                               \
-  if ((item)->next) {                             \
-    (item)->next->prev = (item)->prev;            \
-  }                                               \
-  if ((item) == (first)) {                        \
-    (first) = (item)->next;                       \
-  }                                               \
-  if ((item) == (last)) {                         \
-    (last) = (item)->prev;                        \
-  }                                               \
-} while (0)
 
 #define checkOpenGLError() do {                                            \
   if (!game->disableOpenGLErrorOutput) {                                   \
@@ -229,7 +212,7 @@ static void delTextureRef(texture2d *tex) {
   }
 }
 
-unsigned long long systemNow(void) {
+unsigned long long now(void) {
   struct timeval time;
   unsigned long long millisecs;
   gettimeofday(&time, 0);
@@ -237,29 +220,15 @@ unsigned long long systemNow(void) {
   return millisecs;
 }
 
-int systemGetWidth(void) {
-  return game->width;
-}
-
-int systemGetHeight(void) {
-  return game->height;
-}
-
-static void setStatusBarBackgroundColor(void *tag) {
-  int color = (char *)tag - 0;
-  phoneSetStatusBarBackgroundColor(color);
-}
-
-void systemSetBackgroundColor(int color) {
-  game->clearColorR = (float)((color & 0xff0000) >> 16) / 255;
-  game->clearColorG = (float)((color & 0x00ff00) >> 8) / 255;
-  game->clearColorB = (float)((color & 0x0000ff)) / 255;
-  phoneRunOnMainWorkQueue(setStatusBarBackgroundColor,
-    (void *)((char *)0 + color));
-}
-
 void sprite2dSetLayer(sprite2d *sprt, int layer) {
-  sprt->layer = layer;
+  assert(layer >= 0 && layer <= MAX_LAYER);
+  if (sprt->layer != layer) {
+    removeFromLink(sprt, game->firstSprite[sprt->layer],
+      game->lastSprite[sprt->layer]);
+    sprt->layer = layer;
+    addToLink(sprt, game->firstSprite[sprt->layer],
+      game->lastSprite[sprt->layer]);
+  }
 }
 
 sprite2d *sprite2dCreate(void) {
@@ -267,17 +236,18 @@ sprite2d *sprite2dCreate(void) {
   if (!sprt) {
     return 0;
   }
-  addToLink(sprt, game->firstSprite, game->lastSprite);
+  addToLink(sprt, game->firstSprite[sprt->layer],
+    game->lastSprite[sprt->layer]);
   return sprt;
 }
 
 void sprite2dRemove(sprite2d *sprt) {
-  /*
   if (sprt->vertexBuffer) {
     glDeleteBuffers(1, &sprt->vertexBuffer);
     sprt->vertexBuffer = 0;
-  }*/
-  removeFromLink(sprt, game->firstSprite, game->lastSprite);
+  }
+  removeFromLink(sprt, game->firstSprite[sprt->layer],
+    game->lastSprite[sprt->layer]);
   free(sprt);
 }
 
@@ -329,11 +299,6 @@ void sprite2dRender(sprite2d *sprt, imageFrame2d *frame) {
     };
     memcpy(vertices, unrotatedVertices, sizeof(vertices));
   }
-  if (0 != memcmp(sprt->vertices, vertices, sizeof(vertices))) {
-    sprt->texId = frame->tex->id;
-    memcpy(sprt->vertices, vertices, sizeof(vertices));
-  }
-  /*
   if (!sprt->vertexBuffer ||
       0 != memcmp(sprt->vertices, vertices, sizeof(vertices))) {
     sprt->texId = frame->tex->id;
@@ -350,10 +315,47 @@ void sprite2dRender(sprite2d *sprt, imageFrame2d *frame) {
     checkOpenGLError();
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     checkOpenGLError();
-  }*/
+  }
 }
 
-/*
+animation2d *animation2dCreate(void) {
+  animation2d *ani = (animation2d *)calloc(1, sizeof(animation2d));
+  if (!ani) {
+    return 0;
+  }
+  ani->currentFrame = 0;
+  return ani;
+}
+
+int animation2dAddFrame(animation2d *ani, imageFrame2d *frame, int duration) {
+  imageFrame2dNode *n = (imageFrame2dNode *)calloc(1, sizeof(imageFrame2dNode));
+  if (!n) {
+    return -1;
+  }
+  ani->lastStopDuration += duration;
+  n->stopDuration = ani->lastStopDuration;
+  n->frame = frame;
+  addToLink(n, ani->firstFrame, ani->lastFrame);
+  return 0;
+}
+
+imageFrame2d *animationQueryCurrentFrame(animation2d *ani) {
+  unsigned long long currentTime = now();
+  if (0 == ani->startTime) {
+    ani->startTime = currentTime;
+    ani->currentFrame = ani->firstFrame;
+  }
+  while (ani->currentFrame) {
+    if (currentTime < ani->startTime + ani->currentFrame->stopDuration) {
+      return ani->currentFrame->frame;
+    }
+    ani->currentFrame = ani->currentFrame->next;
+  }
+  ani->startTime = currentTime;
+  ani->currentFrame = ani->firstFrame;
+  return ani->currentFrame->frame;
+}
+
 static void drawSprite(sprite2d *sprt) {
   glActiveTexture(GL_TEXTURE0);
   checkOpenGLError();
@@ -362,12 +364,6 @@ static void drawSprite(sprite2d *sprt) {
   checkOpenGLError();
   glUniform1i(game->textureUniform, 0);
   checkOpenGLError();
-
-  //glUniformMatrix4fv(game->rotationMatrixSlot, 1, GL_FALSE,
-  //  sprt->rotated ? &game->rotatedMatrix.data[0] :
-  //    &game->unrotatedMatrix.data[0]);
-  glUniformMatrix4fv(game->rotationMatrixSlot, 1, GL_FALSE,
-    &game->unrotatedMatrix.data[0]);
 
   glBindBuffer(GL_ARRAY_BUFFER, sprt->vertexBuffer);
   checkOpenGLError();
@@ -394,138 +390,21 @@ static void drawSprite(sprite2d *sprt) {
 
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
   checkOpenGLError();
-}*/
-
-
-static void drawAllSprites(void) {
-  sprite2d *loop;
-  int num = 0;
-  GLubyte *indices = 0;
-  vertex *vertices = 0;
-  GLuint texId = 0;
-  int indiceOffset = 0;
-  int verticeOffset = 0;
-  int indiceAdd = 0;
-
-  loop = game->firstSprite;
-  while (loop) {
-    if (!loop->hidden && loop->texId) {
-      if (0 == texId) {
-        texId = loop->texId;
-      }
-      ++num;
-    }
-    loop = loop->next;
-  }
-
-  indices = (GLubyte *)calloc(num, sizeof(fixedIndices));
-  vertices = (vertex *)calloc(num, sizeof(vertex) * 4);
-
-  glActiveTexture(GL_TEXTURE0);
-  checkOpenGLError();
-
-  glBindTexture(GL_TEXTURE_2D, texId);
-  checkOpenGLError();
-  glUniform1i(game->textureUniform, 0);
-  checkOpenGLError();
-
-  //glUniformMatrix4fv(game->rotationMatrixSlot, 1, GL_FALSE,
-  //  sprt->rotated ? &game->rotatedMatrix.data[0] :
-  //    &game->unrotatedMatrix.data[0]);
-  glUniformMatrix4fv(game->rotationMatrixSlot, 1, GL_FALSE,
-    &game->unrotatedMatrix.data[0]);
-
-  loop = game->firstSprite;
-  num = 0;
-  while (loop) {
-    if (!loop->hidden && loop->texId) {
-      int i;
-      memcpy((char *)vertices + verticeOffset,
-        loop->vertices, sizeof(loop->vertices));
-      verticeOffset += sizeof(loop->vertices);
-      for (i = 0; i < sizeof(fixedIndices); ++i) {
-        indices[indiceOffset + i] = indiceAdd + fixedIndices[i];
-      }
-      indiceOffset += sizeof(fixedIndices);
-      indiceAdd += 4;
-      ++num;
-    }
-    loop = loop->next;
-  }
-
-  phoneLog(PHONE_LOG_DEBUG, __FUNCTION__, "sprite num:%d", num);
-
-  if (0 == game->vertexBuffer) {
-    glGenBuffers(1, &game->vertexBuffer);
-    assert(game->vertexBuffer);
-    checkOpenGLError();
-  }
-
-  if (0 == game->indexBuffer) {
-    glGenBuffers(1, &game->indexBuffer);
-    assert(game->indexBuffer);
-    checkOpenGLError();
-  }
-
-  glBindBuffer(GL_ARRAY_BUFFER, game->vertexBuffer);
-  checkOpenGLError();
-  glBufferData(GL_ARRAY_BUFFER, num * sizeof(vertex) * 4, vertices,
-    GL_STATIC_DRAW);
-  checkOpenGLError();
-
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, game->indexBuffer);
-  checkOpenGLError();
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER, num * sizeof(fixedIndices), indices,
-    GL_STATIC_DRAW);
-  checkOpenGLError();
-
-  glVertexAttribPointer(game->positionSlot, 3, GL_FLOAT, GL_FALSE,
-      sizeof(vertex), 0);
-  checkOpenGLError();
-  glVertexAttribPointer(game->texCoordSlot, 2, GL_FLOAT, GL_FALSE,
-      sizeof(vertex), (GLvoid*)(sizeof(float) * 3));
-  checkOpenGLError();
-
-  glDrawElements(GL_TRIANGLES, num * (sizeof(fixedIndices) /
-      sizeof(fixedIndices[0])), GL_UNSIGNED_BYTE, 0);
-  checkOpenGLError();
-
-  glBindTexture(GL_TEXTURE_2D, 0);
-  checkOpenGLError();
-
-  glBindBuffer(GL_ARRAY_BUFFER, 0);
-  checkOpenGLError();
-
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-  checkOpenGLError();
-
-  free(indices);
-  free(vertices);
 }
 
-/*
 static void drawAllSprites(void) {
   sprite2d *loop;
   int layer = 0;
-  game->roundId += 1;
-  for (layer = 0; layer <= 3; ++layer) {
-    loop = game->firstSprite;
+  for (layer = 0; layer <= MAX_LAYER; ++layer) {
+    loop = game->firstSprite[layer];
     while (loop) {
-      if (!loop->hidden && loop->texId && layer == loop->layer) {
-        loop->roundId = game->roundId;
+      if (!loop->hidden && loop->texId) {
         drawSprite(loop);
       }
       loop = loop->next;
     }
   }
-  loop = game->firstSprite;
-  while (loop) {
-    if (!loop->hidden && loop->texId && loop->roundId != game->roundId) {
-      drawSprite(loop);
-    }
-    loop = loop->next;
-  }
-}*/
+}
 
 char *assetLoadString(const char *assetName, int *len) {
   int fileSize;
@@ -595,325 +474,6 @@ void imageFrame2dDispose(imageFrame2d *frame) {
 }
 
 //////////////////////////////////////////////////////////////////////////
-
-/////////////////////////////// JS UTIL //////////////////////////////////
-
-static void *getRawPointerFromThis(duk_context *js) {
-  void *rawPointer;
-  duk_push_this(js);
-  duk_get_prop_string(js, -1, "_rawpointer");
-  rawPointer = duk_to_pointer(js, -1);
-  duk_pop_n(js, 2);
-  return rawPointer;
-}
-
-static void *getRawPointerFromIndex(duk_context *js, duk_idx_t index) {
-  void *rawPointer;
-  duk_get_prop_string(js, index, "_rawpointer");
-  rawPointer = duk_to_pointer(js, -1);
-  duk_pop_n(js, 1);
-  return rawPointer;
-}
-
-//////////////////////////////////////////////////////////////////////////
-
-/////////////////////////////// JS API ///////////////////////////////////
-
-static duk_ret_t System_now(duk_context *js) {
-  duk_push_number(js, systemNow());
-  return 1;
-}
-
-static duk_ret_t System_getWidth(duk_context *js) {
-  duk_push_int(js, systemGetWidth());
-  return 1;
-}
-
-static duk_ret_t System_getHeight(duk_context *js) {
-  duk_push_int(js, systemGetHeight());
-  return 1;
-}
-
-static duk_ret_t System_log(duk_context *js) {
-  duk_idx_t num = duk_get_top(js);
-  duk_idx_t i;
-  for (i = 0; i < num; ++i) {
-    phoneLog(PHONE_LOG_INFO, "gravity", "%s",
-      duk_to_string(game->js, i));
-  }
-  return 0;
-}
-
-static duk_ret_t System_setBackgroundColor(duk_context *js) {
-  int color = duk_get_int(js, 0);
-  systemSetBackgroundColor(color);
-  return 0;
-}
-
-static duk_ret_t System_register(duk_context *js) {
-  const char *moduleName = duk_to_string(js, 0);
-  duk_push_global_object(js);
-  duk_push_object(js);
-  duk_put_prop_string(js, -2, moduleName);
-  duk_pop(js);
-  return 0;
-}
-
-static duk_ret_t Sprite2D_remove(duk_context *js) {
-  sprite2d *sprt = getRawPointerFromThis(js);
-  sprite2dRemove(sprt);
-  duk_push_this(js);
-  return 1;
-}
-
-static duk_ret_t Sprite2D_setLayer(duk_context *js) {
-  sprite2d *sprt = getRawPointerFromThis(js);
-  int layer = duk_to_int(js, 0);
-  sprite2dSetLayer(sprt, layer);
-  duk_push_this(js);
-  return 1;
-}
-
-static duk_ret_t Sprite2D_show(duk_context *js) {
-  sprite2d *sprt = getRawPointerFromThis(js);
-  sprite2dShow(sprt);
-  duk_push_this(js);
-  return 1;
-}
-
-static duk_ret_t Sprite2D_hide(duk_context *js) {
-  sprite2d *sprt = getRawPointerFromThis(js);
-  sprite2dHide(sprt);
-  duk_push_this(js);
-  return 1;
-}
-
-static duk_ret_t Sprite2D_setX(duk_context *js) {
-  sprite2d *sprt = getRawPointerFromThis(js);
-  int x = duk_to_int(js, 0);
-  sprite2dSetX(sprt, x);
-  duk_push_this(js);
-  return 1;
-}
-
-static duk_ret_t Sprite2D_setY(duk_context *js) {
-  sprite2d *sprt = getRawPointerFromThis(js);
-  int y = duk_to_int(js, 0);
-  sprite2dSetY(sprt, y);
-  duk_push_this(js);
-  return 1;
-}
-
-static duk_ret_t Sprite2D_render(duk_context *js) {
-  sprite2d *sprt = getRawPointerFromThis(js);
-  imageFrame2d *frame = getRawPointerFromIndex(js, 0);
-  sprite2dRender(sprt, frame);
-  duk_push_this(js);
-  return 1;
-}
-
-static void pushSprite2dFromRawPointer(duk_context *js,
-    sprite2d *sprt) {
-  duk_push_object(js);
-  duk_push_c_function(js, Sprite2D_remove, 0);
-  duk_put_prop_string(js, -2, "remove");
-  duk_push_c_function(js, Sprite2D_show, 0);
-  duk_put_prop_string(js, -2, "show");
-  duk_push_c_function(js, Sprite2D_hide, 0);
-  duk_put_prop_string(js, -2, "hide");
-  duk_push_c_function(js, Sprite2D_setX, 1);
-  duk_put_prop_string(js, -2, "setX");
-  duk_push_c_function(js, Sprite2D_setY, 1);
-  duk_put_prop_string(js, -2, "setY");
-  duk_push_c_function(js, Sprite2D_render, 1);
-  duk_put_prop_string(js, -2, "render");
-  duk_push_c_function(js, Sprite2D_setLayer, 1);
-  duk_put_prop_string(js, -2, "setLayer");
-  duk_push_pointer(js, sprt);
-  duk_put_prop_string(js, -2, "_rawpointer");
-}
-
-static duk_ret_t Sprite2D_create(duk_context *js) {
-  sprite2d *sprt = sprite2dCreate();
-  if (!sprt) {
-    phoneLog(PHONE_LOG_ERROR, __FUNCTION__, "sprite2dCreate failed");
-    return 0;
-  }
-  sprt->layer = 1;
-  pushSprite2dFromRawPointer(js, sprt);
-  return 1;
-}
-
-static duk_ret_t ImageFrame2D_flip(duk_context *js) {
-  imageFrame2d *frame = getRawPointerFromThis(js);
-  imageFrame2dFlip(frame);
-  duk_push_this(js);
-  return 1;
-}
-
-static duk_ret_t ImageFrame2D_setOffsetX(duk_context *js) {
-  imageFrame2d *frame = getRawPointerFromThis(js);
-  int offsetX = duk_to_int(js, 0);
-  imageFrame2dSetOffsetX(frame, offsetX);
-  duk_push_this(js);
-  return 1;
-}
-
-static duk_ret_t ImageFrame2D_setOffsetY(duk_context *js) {
-  imageFrame2d *frame = getRawPointerFromThis(js);
-  int offsetY = duk_to_int(js, 0);
-  imageFrame2dSetOffsetY(frame, offsetY);
-  duk_push_this(js);
-  return 1;
-}
-
-static duk_ret_t imageFrame2D_Dispose(duk_context *js) {
-  imageFrame2d *frame = getRawPointerFromThis(js);
-  imageFrame2dDispose(frame);
-  duk_push_this(js);
-  return 1;
-}
-
-static void pushImageFrame2dFromRawPointer(duk_context *js,
-    imageFrame2d *frame) {
-  duk_push_object(js);
-  duk_push_c_function(js, ImageFrame2D_flip, 0);
-  duk_put_prop_string(js, -2, "flip");
-  duk_push_c_function(js, ImageFrame2D_setOffsetX, 1);
-  duk_put_prop_string(js, -2, "setOffsetX");
-  duk_push_c_function(js, ImageFrame2D_setOffsetY, 1);
-  duk_put_prop_string(js, -2, "setOffsetY");
-  duk_push_c_function(js, imageFrame2D_Dispose, 0);
-  duk_put_prop_string(js, -2, "Dispose");
-  duk_push_pointer(js, frame);
-  duk_put_prop_string(js, -2, "_rawpointer");
-}
-
-static duk_ret_t Asset_loadString(duk_context *js) {
-  const char *assetName = duk_to_string(js, 0);
-  int len = 0;
-  char *content = assetLoadString(assetName, &len);
-  if (!content) {
-    phoneLog(PHONE_LOG_ERROR, __FUNCTION__, "assetLoadString %s failed",
-      assetName);
-    return 0;
-  }
-  duk_push_lstring(js, content, len);
-  free(content);
-  return 1;
-}
-
-static duk_ret_t Asset_loadImageFrame2D(duk_context *js) {
-  const char *assetName = duk_to_string(js, 0);
-  int left = duk_to_int(game->js, 1);
-  int top = duk_to_int(game->js, 2);
-  int width = duk_to_int(game->js, 3);
-  int height = duk_to_int(game->js, 4);
-  imageFrame2d *frame = assetLoadImageFrame2d(assetName, left, top, width,
-    height);
-  if (!frame) {
-    phoneLog(PHONE_LOG_ERROR, __FUNCTION__, "assetLoadImageFrame2d failed");
-    return 0;
-  }
-  pushImageFrame2dFromRawPointer(js, frame);
-  return 1;
-}
-
-//////////////////////////////////////////////////////////////////////////
-
-////////////////////////// REGISTER JS FUNCTIONS /////////////////////////
-
-const duk_function_list_entry systemFuncs[] = {
-  {"now", System_now, 0},
-  {"log", System_log, DUK_VARARGS},
-  {"register", System_register, 1},
-  {"setBackgroundColor", System_setBackgroundColor, 1},
-  {"getWidth", System_getWidth, 0},
-  {"getHeight", System_getHeight, 0},
-  {0, 0, 0 }
-};
-
-const duk_function_list_entry sprite2dFuncs[] = {
-  {"create", Sprite2D_create, 0},
-  {0, 0, 0 }
-};
-
-const duk_function_list_entry assetFuncs[] = {
-  {"loadString", Asset_loadString, 1},
-  {"loadImageFrame2D", Asset_loadImageFrame2D, 5},
-  {0, 0, 0 }
-};
-
-const duk_function_list_entry imageFrame2dFuncs[] = {
-  {0, 0, 0 }
-};
-
-const struct {
-  const char *name;
-  const duk_function_list_entry *entry;
-} objectFuncsList[] = {
-  {"System", systemFuncs},
-  {"Sprite2D", sprite2dFuncs},
-  {"Asset", assetFuncs},
-  {"ImageFrame2D", imageFrame2dFuncs},
-};
-
-static void registerJsFunctions(duk_context *js) {
-  int i;
-  duk_push_global_object(js);
-  for (i = 0; i < sizeof(objectFuncsList) / sizeof(objectFuncsList[0]); ++i) {
-    duk_push_object(js);
-    duk_put_function_list(js, -1, objectFuncsList[i].entry);
-    duk_put_prop_string(js, -2, objectFuncsList[i].name);
-  }
-  duk_pop(js);
-}
-
-///////////////////////////////////////////////////////////////////////////
-
-const char *scriptNameList[] = {
-  "animation2d.js",
-  "map2d.js",
-  "gravity.js"
-};
-
-static void initJavascript(void) {
-  duk_context *js = duk_create_heap_default();
-  int i;
-
-  game->js = js;
-  registerJsFunctions(js);
-
-  for (i = 0; i < sizeof(scriptNameList) / sizeof(scriptNameList[0]); ++i) {
-    int scriptLen;
-    const char *scriptName = scriptNameList[i];
-    char *script = assetLoadString(scriptName, &scriptLen);
-    if (0 != duk_peval_lstring(game->js, script, scriptLen)) {
-      free(script);
-      phoneLog(PHONE_LOG_DEBUG, __FUNCTION__,
-        "duk_peval_lstring lunch %s failed: %s",
-        scriptName, duk_safe_to_string(js, -1));
-      return;
-    }
-    free(script);
-  }
-  duk_pop(game->js);
-}
-
-static int update(void) {
-  int result = 0;
-  duk_context *js = game->js;
-  duk_push_global_object(js);
-  duk_get_prop_string(js, -1, "update");
-  if (duk_pcall(js, 0) != 0) {
-    phoneLog(PHONE_LOG_ERROR, __FUNCTION__,
-      "duk_pcall failed: %s\n", duk_safe_to_string(js, -1));
-  } else {
-    result = duk_to_boolean(js, -1);
-  }
-  duk_pop(js);
-  return result;
-}
 
 static void layout(void);
 
@@ -989,8 +549,10 @@ static void render(int handle) {
   checkOpenGLError();
 
   if (!game->inited) {
-    matrixLoadIdentity(&game->unrotatedMatrix);
-    //matrixRotateZ(&game->rotatedMatrix, 90);
+    unsigned int color = 0xaaaaaa;
+    game->clearColorR = (float)((color & 0xff0000) >> 16) / 255;
+    game->clearColorG = (float)((color & 0x00ff00) >> 8) / 255;
+    game->clearColorB = (float)((color & 0x0000ff)) / 255;
 
     glGenRenderbuffers(1, &game->colorRenderBuffer);
     checkOpenGLError();
@@ -1034,14 +596,11 @@ static void render(int handle) {
     game->positionSlot = glGetAttribLocation(game->program, "Position");
     game->texCoordSlot = glGetAttribLocation(game->program, "TexCoordIn");
     game->textureUniform = glGetUniformLocation(game->program, "Texture");
-    game->rotationMatrixSlot = glGetUniformLocation(game->program,
-      "rotationMatrixIn");
     glEnableVertexAttribArray(game->texCoordSlot);
     checkOpenGLError();
     glEnableVertexAttribArray(game->positionSlot);
     checkOpenGLError();
 
-    /*
     glGenBuffers(1, &game->indexBuffer);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, game->indexBuffer);
     checkOpenGLError();
@@ -1049,9 +608,6 @@ static void render(int handle) {
       GL_STATIC_DRAW);
     checkOpenGLError();
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-    */
-
-    initJavascript();
 
     game->disableOpenGLErrorOutput = 1;
     game->inited = 1;
@@ -1082,33 +638,14 @@ int phoneMain(int argc, const char *argv[]) {
   };
   phoneSetAppNotificationHandler(&handler);
   phoneShowStatusBar(0);
+  phoneSetStatusBarBackgroundColor(0xaaaaaa);
+  phoneForceOrientation(PHONE_ORIENTATION_SETTING_LANDSCAPE);
   initOpenGLView();
   layout();
   return 0;
 }
 
 static void layout(void) {
-  /*
-  float openGLViewWidth;
-  float openGLViewHeight;
-  float margin;
-  float openGLViewTop;
-  float padding = dp(10);
-
-  if (phoneGetViewWidth(0) < phoneGetViewHeight(0)) {
-    margin = dp(20);
-    openGLViewWidth = phoneGetViewWidth(0) - margin * 2;
-    openGLViewHeight = openGLViewWidth * 320 / 480;
-  } else {
-    margin = dp(10);
-    openGLViewHeight = phoneGetViewHeight(0) - margin * 2;
-    openGLViewWidth = openGLViewHeight * 480 / 320;
-  }
-  openGLViewTop = (phoneGetViewHeight(0) -
-    openGLViewHeight) / 2 - dp(40);
-  phoneSetViewFrame(game->glView, margin, openGLViewTop,
-    openGLViewWidth, openGLViewHeight);*/
-
   game->width = phoneGetViewWidth(0);
   game->height = phoneGetViewHeight(0);
   phoneSetViewFrame(game->glView, 0, 0,
